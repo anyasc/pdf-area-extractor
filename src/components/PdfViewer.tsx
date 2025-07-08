@@ -20,7 +20,7 @@ interface PdfViewerProps {
   onTextsExtracted: (texts: ExtractedText[]) => void;
 }
 
-// Cria o objeto a ser usado como área de seleção
+// Objeto de seleção de área retangular
 interface SelectionArea {
   x: number;
   y: number;
@@ -28,11 +28,13 @@ interface SelectionArea {
   height: number;
 }
 
+// Referências para chamar funções a partir de outros componentes
 export interface PdfViewerRef {
   extractTexts: () => void;
   clearSelection: () => void;
 }
 
+// Objeto de texto extraído por página
 interface ExtractedText {
   pageNumber: number;
   text: string;
@@ -40,13 +42,13 @@ interface ExtractedText {
 
 const PdfViewer = forwardRef<PdfViewerRef, PdfViewerProps>(
   ({ file, onTextsExtracted }, ref) => {
+    const documentRef = useRef<any>(null);
+
     // constantes para virar páginas
     const [numPages, setNumPages] = useState<number>();
     const [pageNumber, setPageNumber] = useState<number>(1);
 
-    const documentRef = useRef<any>(null);
-
-    //constantes para seleção de área
+    // Constantes para seleção de área
     const [selectionArea, setSelectionArea] = useState<SelectionArea | null>(
       null
     );
@@ -58,9 +60,9 @@ const PdfViewer = forwardRef<PdfViewerRef, PdfViewerProps>(
     const [currentSelection, setCurrentSelection] =
       useState<SelectionArea | null>(null);
 
-    const pdfRef = useRef<HTMLDivElement>(null); // Usa a div do pdf como referência para a seleção da área
+    const pdfRef = useRef<HTMLDivElement>(null);
 
-    // Funções de mudar de página
+    // Conjunto de funções para virar a página
     function changePage(offset: number) {
       setPageNumber((prevPageNumber) => prevPageNumber + offset);
     }
@@ -71,6 +73,12 @@ const PdfViewer = forwardRef<PdfViewerRef, PdfViewerProps>(
       changePage(1);
     }
 
+    /**
+     * Funções para seleção de área
+     * - Primeiro clique inicia a seleção
+     * - Mover o mouse altera a área sendo selecionada
+     * - Clicar novamente completa a seleção
+     */
     const handleMouseDown = useCallback(
       (e: React.MouseEvent) => {
         if (!pdfRef.current) return;
@@ -95,7 +103,6 @@ const PdfViewer = forwardRef<PdfViewerRef, PdfViewerProps>(
       },
       [isSelecting, currentSelection]
     );
-
     const handleMouseMove = useCallback(
       (e: React.MouseEvent) => {
         if (!isSelecting || !startPoint || !pdfRef.current) return;
@@ -116,32 +123,42 @@ const PdfViewer = forwardRef<PdfViewerRef, PdfViewerProps>(
       [isSelecting, startPoint]
     );
 
-    // Extraindo o texto
+    /**
+     * Função para extrair o texto na área de seleção
+     * - Loop que repete em cada página
+     * - Considera questões de escala e posição do pdf e área de seleção
+     * - Objetos com número da página e string são organizados em uma array
+     */
     const extractText = async () => {
+      // Early return em caso de dados ausentes
       if (!documentRef.current || !selectionArea || !numPages) return;
 
       const allStrings: ExtractedText[] = [];
+
       for (let pageNum = 1; pageNum <= numPages; pageNum++) {
         const page = await documentRef.current.getPage(pageNum);
-        const viewport = page.getViewport({ scale: 1 });
-        const currentViewport = page.getViewport({
-          scale: 600 / viewport.width,
-        });
 
-        // Obtendo as coordenadas da área de seleção na escala correta
-        const scale = currentViewport.scale;
+        // Encontrando a escala em que o pdf foi renderizado
+        const originalViewport = page.getViewport({ scale: 1 });
+        const renderedWidth =
+          pdfRef.current
+            ?.querySelector(".react-pdf__Page")
+            ?.getBoundingClientRect().width || 600;
+        const renderedScale = renderedWidth / originalViewport.width;
+
+        //Convertendo coordenadas da seleção para coordenadas do pdf original, considerando escala
         const pdfCoords = {
-          x: selectionArea.x / scale,
-          width: selectionArea.width / scale,
-          // inverter Y, pois na seleção o zero está no topo, e no pdf, na base
+          x: selectionArea.x / renderedScale,
+          width: selectionArea.width / renderedScale,
+          //Y invertido: página = origem no topo, PDF = origem na base
           y:
-            viewport.height -
-            selectionArea.y / scale -
-            selectionArea.height / scale,
-          height: selectionArea.height / scale,
+            originalViewport.height -
+            selectionArea.y / renderedScale -
+            selectionArea.height / renderedScale,
+          height: selectionArea.height / renderedScale,
         };
 
-        // Extrair texto de cada página
+        // Extrair textos da página e filtrar pela áre selecionada
         const textContent = await page.getTextContent();
         const filteredTextContent = textContent.items.filter(
           (item: {
@@ -163,11 +180,13 @@ const PdfViewer = forwardRef<PdfViewerRef, PdfViewerProps>(
           }
         );
 
+        // Combinação do texto em string única por página
         const pageText = filteredTextContent
           .map((item: { str: any }) => item.str)
           .join(" ");
         allStrings.push({ pageNumber: pageNum, text: pageText });
       }
+
       onTextsExtracted(allStrings);
     };
 
@@ -186,11 +205,19 @@ const PdfViewer = forwardRef<PdfViewerRef, PdfViewerProps>(
     return !file ? (
       // Mensagem antes de carregar algum pdf
       <>
-        <p>Carregue um pdf para ser exibido aqui</p>
+        <div className="row">
+          <div
+            className="col-12 d-flex justify-content-center align-items-center"
+            style={{ minHeight: "50vh" }}
+          >
+            <p className="text-muted">Carregue um pdf para ser exibido aqui</p>
+          </div>
+        </div>
       </>
     ) : (
       // Exibindo o pdf
       <>
+        {/* Menu de virar as páginas */}
         <div className="row justify-content-center align-items-center mx-3 mt-2">
           <button
             className="col btn btn-secondary m-1"
@@ -217,7 +244,12 @@ const PdfViewer = forwardRef<PdfViewerRef, PdfViewerProps>(
           className="position-relative d-inline-block"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
+          style={{
+            cursor: "crosshair", // ← Sempre crosshair, removendo a condição
+            userSelect: "none",
+          }}
         >
+          {/* Documento */}
           <Document
             file={file}
             onLoadSuccess={(pdfDoc) => {
@@ -232,6 +264,7 @@ const PdfViewer = forwardRef<PdfViewerRef, PdfViewerProps>(
               renderAnnotationLayer={false}
             />
           </Document>
+          {/* Div para exibir área de seleção concluída */}
           {selectionArea && (
             <div
               className="position-absolute border border-success"
@@ -245,6 +278,7 @@ const PdfViewer = forwardRef<PdfViewerRef, PdfViewerProps>(
               }}
             ></div>
           )}
+          {/* Div para exibir área sendo selecionada */}
           {currentSelection && (
             <div
               className="position-absolute border border-secondary"
@@ -264,5 +298,5 @@ const PdfViewer = forwardRef<PdfViewerRef, PdfViewerProps>(
   }
 );
 
-export default PdfViewer;
 export type { ExtractedText };
+export default PdfViewer;

@@ -8,7 +8,7 @@ interface ExtractedTextsBoxProps {
 function ExtractedTextsBox({ extractedTexts }: ExtractedTextsBoxProps) {
   return extractedTexts.length === 0 ? (
     <div className="border mt-2">
-      <p className="m-4">O texto extraído será exibido aqui</p>
+      <p className="text-muted m-4">O texto extraído será exibido aqui</p>
     </div>
   ) : (
     <>
