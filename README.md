@@ -1,69 +1,44 @@
-# React + TypeScript + Vite
+# PDF Area Extractor
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Uma aplicação web para extrair texto de áreas específicas em documentos PDF, permitindo selecionar uma região em qualquer página e aplicar a mesma área em todas as páginas do documento.
 
-Currently, two official plugins are available:
+## Links
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **[Demo ao vivo](https://anyasc.github.io/pdf-area-extractor/)**
+- **[Repositório](https://github.com/anyasc/pdf-area-extractor)**
 
-## Expanding the ESLint configuration
+## Como usar
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+1. **Faça upload** de um arquivo PDF
+2. **Navegue** pelas páginas usando os controles
+3. **Selecione uma área** clicando e movendo o mouse sobre o texto desejado
+4. **Clique em "Extrair Textos"** para processar todas as páginas
+5. **Visualize os resultados** na tabela lateral
+6. **Faça download** em CSV se necessário
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Executar localmente
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+### Pré-requisitos
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+- Node.js 16+
+- npm ou yarn
+
+### Instalação
+
+```bash
+# Clone o repositório
+git clone https://github.com/anyasc/pdf-area-extractor.git
+
+# Entre na pasta
+cd pdf-area-extractor
+
+# Instale as dependências
+npm install
+
+# Execute o projeto
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Autora
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+**Anya Cunha** - [GitHub](https://github.com/anyasc)
